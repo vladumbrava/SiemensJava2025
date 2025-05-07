@@ -3,6 +3,8 @@ package com.siemens.internship.service;
 import com.siemens.internship.model.Item;
 import com.siemens.internship.repository.ItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -11,14 +13,29 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
+/**
+ * Issues:
+ * - field injection is not recommended in spring boot
+ * - ExecutorService is less suitable in the Spring context (improper shutdown management,
+ *   resource leaks, unpredictable behaviour combined with @Async)
+ * Solutions:
+ * - approach constructor injection to promote immutability and testability
+ * - use TaskExecutor, it is designed for Spring's asynchronous execution (managed as a
+ *   Spring bean, allowing proper lifecycle management)
+ */
+
 @Service
 public class ItemService {
-    @Autowired
-    private ItemRepository itemRepository;
-    private static ExecutorService executor = Executors.newFixedThreadPool(10);
+    private final ItemRepository itemRepository;
+    private final TaskExecutor executor;
     private List<Item> processedItems = new ArrayList<>();
     private int processedCount = 0;
 
+    @Autowired
+    public ItemService(ItemRepository itemRepository, @Qualifier("taskExecutor") TaskExecutor executor) {
+        this.itemRepository = itemRepository;
+        this.executor = executor;
+    }
 
     public List<Item> findAll() {
         return itemRepository.findAll();
