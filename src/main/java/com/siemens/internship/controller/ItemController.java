@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Issues:
@@ -46,7 +47,7 @@ public class ItemController {
     @PostMapping
     public ResponseEntity<Item> createItem(@Valid @RequestBody Item item, BindingResult result) {
         if (result.hasErrors()) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(itemService.save(item), HttpStatus.CREATED);
     }
@@ -77,10 +78,17 @@ public class ItemController {
 
     @GetMapping("/process")
     public ResponseEntity<List<Item>> processItems() {
-        List<Item> processedItems = itemService.processItemsAsync();
-        if (processedItems.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        try {
+            CompletableFuture<List<Item>> processedItemsFuture = itemService.processItemsAsync();
+            List<Item> processedItems = processedItemsFuture.join();
+
+            if (processedItems.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(processedItems, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(itemService.processItemsAsync(), HttpStatus.OK);
     }
 }

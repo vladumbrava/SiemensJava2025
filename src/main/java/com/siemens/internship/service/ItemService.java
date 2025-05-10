@@ -8,10 +8,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -19,20 +16,26 @@ import java.util.concurrent.*;
  * - field injection is not recommended in spring boot
  * - ExecutorService is less suitable in the Spring context (improper shutdown management,
  *   resource leaks, unpredictable behaviour combined with @Async)
+ * - a method annotated with @Async must have a void or Future-like type
+ * - errors are simply printed, but not properly managed
+ * - the method returns before all items are processed
+ * - it is a bad practice to have processedItems as a field of the service, because it is
+ *   initialized in the initialization moment of the service and would need to be reinitialized
+ *   at each processItemsAsync() method call, which does not make sense
+ * - similarly, processedCount is defined as a field of the service, although it should be
+ *   a variable within the asynchronous method
  * Solutions:
  * - approach constructor injection to promote immutability and testability
  * - use TaskExecutor, it is designed for Spring's asynchronous execution (managed as a
  *   Spring bean, allowing proper lifecycle management)
+ * - modify the return type of the @Async annotated method to Future-like type
+ * - delete the fields processedItems and processedCount
  */
 
 @Service
 public class ItemService {
     private final ItemRepository itemRepository;
     private final TaskExecutor executor;
-    // use thread-safe collection to prevent potential concurrent
-    // modification issues when multiple threads try to add items simultaneously
-    private final List<Item> processedItems = Collections.synchronizedList(new ArrayList<>());
-    private int processedCount = 0;
 
     @Autowired
     public ItemService(ItemRepository itemRepository, @Qualifier("taskExecutor") TaskExecutor executor) {
@@ -76,33 +79,31 @@ public class ItemService {
      * Consider the interaction between Spring's @Async and CompletableFuture
      */
     @Async
-    public List<Item> processItemsAsync() {
+    public CompletableFuture<List<Item>> processItemsAsync() {
 
         List<Long> itemIds = itemRepository.findAllIds();
+        List<CompletableFuture<Item>> futures = new ArrayList<>();
 
         for (Long id : itemIds) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Item> future = CompletableFuture.supplyAsync(() -> {
                 try {
-                    Thread.sleep(100);
-
-                    Item item = itemRepository.findById(id).orElse(null);
-                    if (item == null) {
-                        return;
-                    }
-
-                    processedCount++;
-
+                    Item item = itemRepository.findById(id).orElseThrow();
                     item.setStatus("PROCESSED");
                     itemRepository.save(item);
-                    processedItems.add(item);
-
-                } catch (InterruptedException e) {
-                    System.out.println("Error: " + e.getMessage());
+                    return item;
+                } catch (Exception e) {
+                    System.err.println("Error processing item with ID: " + id);
+                    return null;
                 }
             }, executor);
+            futures.add(future);
         }
 
-        return processedItems;
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream()
+                        .map(CompletableFuture::join)
+                        .filter(Objects::nonNull)
+                        .toList());
     }
 
 }
