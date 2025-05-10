@@ -15,7 +15,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *   leads to resource leakage
  * Solutions:
  * - define the executor as a Bean in the configuration class and inject it wherever needed
- * -
  */
 
 @Configuration
