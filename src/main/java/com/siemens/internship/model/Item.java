@@ -20,8 +20,8 @@ import lombok.Setter;
  * - provide validation annotations for the name, description
  *   and status regarding size and nullness
  * - regex validation for email through @Email annotation,
- *   which checks the field's value against the default pattern
- *   [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+ *   which checks the field's value against the pattern
+ *   ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
  */
 
 @Entity
@@ -44,6 +44,6 @@ public class Item {
     @NotBlank(message = "Status cannot be blank")
     private String status;
 
-    @Email
+    @Email(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "Invalid email format")
     private String email;
 }
