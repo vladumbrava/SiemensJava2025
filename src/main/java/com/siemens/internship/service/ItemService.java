@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -28,7 +29,9 @@ import java.util.concurrent.*;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final TaskExecutor executor;
-    private List<Item> processedItems = new ArrayList<>();
+    // use thread-safe collection to prevent potential concurrent
+    // modification issues when multiple threads try to add items simultaneously
+    private final List<Item> processedItems = Collections.synchronizedList(new ArrayList<>());
     private int processedCount = 0;
 
     @Autowired

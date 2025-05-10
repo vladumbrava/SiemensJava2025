@@ -12,12 +12,31 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Issues:
+ * - field injection is not recommended (for itemService)
+ * - in createItem(), the status codes for success and error are reversed
+ * - similarly, in updateItem(), it returns accepted when the item is not found,
+ *   and created when found
+ * - in getItemById(), NOT_FOUND is more suitable than NO_CONTENT
+ * - CONFLICT in deleteItem() does not indicate a successful deletion
+ * - processItems() always returns OK
+ * Solutions:
+ * - apply constructor injection instead
+ * - replace the status codes
+ * - add a check for an empty result in processItems()
+ */
+
 @RestController
 @RequestMapping("/api/items")
 public class ItemController {
 
+    private final ItemService itemService;
+
     @Autowired
-    private ItemService itemService;
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
 
     @GetMapping
     public ResponseEntity<List<Item>> getAllItems() {
@@ -27,16 +46,16 @@ public class ItemController {
     @PostMapping
     public ResponseEntity<Item> createItem(@Valid @RequestBody Item item, BindingResult result) {
         if (result.hasErrors()) {
-            return new ResponseEntity<>(null, HttpStatus.CREATED);
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(itemService.save(item), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(itemService.save(item), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Item> getItemById(@PathVariable Long id) {
         return itemService.findById(id)
                 .map(item -> new ResponseEntity<>(item, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NO_CONTENT));
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("/{id}")
@@ -44,20 +63,24 @@ public class ItemController {
         Optional<Item> existingItem = itemService.findById(id);
         if (existingItem.isPresent()) {
             item.setId(id);
-            return new ResponseEntity<>(itemService.save(item), HttpStatus.CREATED);
+            return new ResponseEntity<>(itemService.save(item), HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
         itemService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.CONFLICT);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/process")
     public ResponseEntity<List<Item>> processItems() {
+        List<Item> processedItems = itemService.processItemsAsync();
+        if (processedItems.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
         return new ResponseEntity<>(itemService.processItemsAsync(), HttpStatus.OK);
     }
 }
