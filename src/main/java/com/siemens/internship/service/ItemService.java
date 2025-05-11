@@ -2,6 +2,7 @@ package com.siemens.internship.service;
 
 import com.siemens.internship.model.Item;
 import com.siemens.internship.repository.ItemRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -33,6 +34,7 @@ import java.util.concurrent.*;
  */
 
 @Service
+@Slf4j
 public class ItemService {
     private final ItemRepository itemRepository;
     private final TaskExecutor executor;
@@ -48,7 +50,13 @@ public class ItemService {
     }
 
     public Optional<Item> findById(Long id) {
-        return itemRepository.findById(id);
+        Optional<Item> item = itemRepository.findById(id);
+        if (item.isPresent()) {
+            log.info("Item with ID: {} found.", id);
+        } else {
+            log.warn("Item with ID: {} not found.", id);
+        }
+        return item;
     }
 
     public Item save(Item item) {
@@ -57,6 +65,7 @@ public class ItemService {
 
     public void deleteById(Long id) {
         if (!itemRepository.existsById(id)) {
+            log.error("Item with ID {} not found", id);
             throw new NoSuchElementException("Item with ID " + id + " not found");
         }
         itemRepository.deleteById(id);
@@ -81,9 +90,12 @@ public class ItemService {
      * Consider the interaction between Spring's @Async and CompletableFuture
      */
     @Async
-    public CompletableFuture<List<Item>> processItemsAsync() {
+    public CompletableFuture<List<Item>> processItemsAsync() throws InterruptedException {
 
         List<Long> itemIds = itemRepository.findAllIds();
+        //Simulate processing delay to ensure the items are processed asynchronously
+        Thread.sleep(2000);
+        log.info("Found {} items to process.", itemIds.size());
         List<CompletableFuture<Item>> futures = new ArrayList<>();
 
         for (Long id : itemIds) {
@@ -92,9 +104,10 @@ public class ItemService {
                     Item item = itemRepository.findById(id).orElseThrow();
                     item.setStatus("PROCESSED");
                     itemRepository.save(item);
+                    log.info("Successfully processed item with ID: {}", id);
                     return item;
                 } catch (Exception e) {
-                    System.err.println("Error processing item with ID: " + id);
+                    log.error("Error processing item with ID: {}", id, e);
                     return null;
                 }
             }, executor);

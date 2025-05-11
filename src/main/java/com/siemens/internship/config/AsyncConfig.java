@@ -1,7 +1,6 @@
 package com.siemens.internship.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
@@ -21,13 +20,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @EnableAsync
+@Slf4j
 public class AsyncConfig {
-
-    private static final Logger logger = LoggerFactory.getLogger(AsyncConfig.class);
 
     @Bean(name = "taskExecutor")
     public TaskExecutor taskExecutor() {
-        logger.info("Initializing TaskExecutor bean with thread pool configuration");
+        log.info("Initializing TaskExecutor bean with thread pool configuration");
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);

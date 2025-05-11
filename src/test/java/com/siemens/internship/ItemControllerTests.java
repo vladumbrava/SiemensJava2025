@@ -170,7 +170,7 @@ class ItemControllerTests {
     }
 
     @Test
-    void processItems_ShouldReturnOK_WhenItemsProcessed() {
+    void processItems_ShouldReturnOK_WhenItemsProcessed() throws InterruptedException {
         List<Item> processedItems = List.of(new Item());
         CompletableFuture<List<Item>> future = CompletableFuture.completedFuture(processedItems);
 
@@ -184,7 +184,7 @@ class ItemControllerTests {
     }
 
     @Test
-    void processItems_ShouldReturnNoContent_WhenNoItemsProcessed() {
+    void processItems_ShouldReturnNoContent_WhenNoItemsProcessed() throws InterruptedException {
         CompletableFuture<List<Item>> future = CompletableFuture.completedFuture(List.of());
 
         when(itemService.processItemsAsync()).thenReturn(future);
@@ -196,7 +196,7 @@ class ItemControllerTests {
     }
 
     @Test
-    void processItems_ShouldReturnServerError_WhenExceptionOccurs() {
+    void processItems_ShouldReturnServerError_WhenExceptionOccurs() throws InterruptedException {
         when(itemService.processItemsAsync()).thenThrow(new RuntimeException("Processing error"));
 
         ResponseEntity<List<Item>> response = itemController.processItems();
