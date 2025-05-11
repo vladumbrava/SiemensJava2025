@@ -56,6 +56,9 @@ public class ItemService {
     }
 
     public void deleteById(Long id) {
+        if (!itemRepository.existsById(id)) {
+            throw new NoSuchElementException("Item with ID " + id + " not found");
+        }
         itemRepository.deleteById(id);
     }
 
@@ -71,7 +74,6 @@ public class ItemService {
      * Correct use of Spring's @Async annotation
      * Add appropriate comments explaining your changes and why they fix the issues
      * Write a brief explanation of what was wrong with the original implementation
-     *
      * Hints
      * Consider how CompletableFuture composition can help coordinate multiple async operations
      * Think about appropriate thread-safe collections
