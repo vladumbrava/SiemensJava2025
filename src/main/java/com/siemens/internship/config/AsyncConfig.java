@@ -23,7 +23,6 @@ public class AsyncConfig {
 
     @Bean(name = "taskExecutor")
     public TaskExecutor taskExecutor() {
-        System.out.println("Task executor instantiated");
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);
         executor.setMaxPoolSize(20);
