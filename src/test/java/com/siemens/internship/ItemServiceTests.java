@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.*;
 
@@ -17,12 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-public class ItemServiceTests {
+class ItemServiceTests {
 
     @Mock
     ItemRepository itemRepository;
-
-    TaskExecutor executor;
 
     @InjectMocks
     ItemService itemService;
@@ -30,15 +26,6 @@ public class ItemServiceTests {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        threadPoolTaskExecutor.setCorePoolSize(10);
-        threadPoolTaskExecutor.setMaxPoolSize(20);
-        threadPoolTaskExecutor.setQueueCapacity(500);
-        threadPoolTaskExecutor.setThreadNamePrefix("Async-");
-        threadPoolTaskExecutor.setWaitForTasksToCompleteOnShutdown(true); // Graceful shutdown
-        threadPoolTaskExecutor.setAwaitTerminationSeconds(30); // Time to wait for tasks to finish
-        threadPoolTaskExecutor.initialize();
-        executor = threadPoolTaskExecutor;
     }
 
     @Test

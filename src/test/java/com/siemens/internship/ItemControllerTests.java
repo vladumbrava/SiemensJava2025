@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class ItemControllerTests {
+class ItemControllerTests {
 
     @Mock
     private ItemService itemService;
